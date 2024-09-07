@@ -78,6 +78,18 @@ emkeyType keyType;
 enum emMode {md_empty, md_read, md_write, md_threeMode};               // режим раоты копировальщика
 emMode copierMode = md_empty;
 
+byte indxKeyInROM(byte buf[]){ //возвращает индекс или ноль если нет в ROM
+  byte buf1[8]; bool eq = true;
+  for (byte j = 1; j<=EEPROM_key_count; j++){  // ищем ключ в eeprom. 
+    EEPROM.get(j*sizeof(buf1), buf1);
+    for (byte i = 0; i < 8; i++) 
+      if (buf1[i] != buf[i]) { eq = false; break;}
+    if (eq) return j;
+    eq = true;
+  }
+  return 0;
+}
+
 void OLED_printKey(byte buf[8], byte msgType = 0){
   String st;
   switch (msgType){
@@ -181,18 +193,6 @@ void clearLed(){
   digitalWrite(R_Led, LOW);
   digitalWrite(G_Led, LOW);
   digitalWrite(B_Led, LOW);  
-}
-
-byte indxKeyInROM(byte buf[]){ //возвращает индекс или ноль если нет в ROM
-  byte buf1[8]; bool eq = true;
-  for (byte j = 1; j<=EEPROM_key_count; j++){  // ищем ключ в eeprom. 
-    EEPROM.get(j*sizeof(buf1), buf1);
-    for (byte i = 0; i < 8; i++) 
-      if (buf1[i] != buf[i]) { eq = false; break;}
-    if (eq) return j;
-    eq = true;
-  }
-  return 0;
 }
 
 bool EPPROM_AddKey(byte buf[]){
