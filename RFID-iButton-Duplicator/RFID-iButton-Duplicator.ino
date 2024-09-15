@@ -17,13 +17,11 @@
 #include "pitches.h"
 #include <EEPROM.h>
 #include <OLED_I2C.h> 
-OLED myOLED(SDA, SCL); //создаем экземпляр класса OLED с именем myOLED
-extern uint8_t SmallFont[];
-extern uint8_t BigNumbers[];
 #include "GyverEncoder.h"
 #include "TimerOne.h"
 #include <SPI.h>
 #include <MFRC522.h>
+
 /* 
  * Typical pin layout used:
  * -----------------------------------------------------------------------------------------
@@ -36,6 +34,10 @@ extern uint8_t BigNumbers[];
  * SPI MISO    MISO         12 / ICSP-1   50        D12        ICSP-1           14
  * SPI SCK     SCK          13 / ICSP-3   52        D13        ICSP-3           15
  */
+
+OLED myOLED(SDA, SCL); //создаем экземпляр класса OLED с именем myOLED
+extern uint8_t SmallFont[];
+extern uint8_t BigNumbers[];
 
 // Настройки
 // #define DEBUG_ENABLED     // Раскоментируйте для вкл отладки
@@ -305,8 +307,8 @@ bool write2iBtnTM2004(){                // функция записи на TM20
   } 
   if (!result){
     ibutton.reset();
-    Serial.println(F(" The key copy faild"));
-    OLED_printError(F("The key copy faild"));
+    Serial.println(F(" The key copy failed"));
+    OLED_printError(F("The key copy failed"));
     Sd_ErrorBeep();
     digitalWrite(R_Led, HIGH);
     return false;    
@@ -348,8 +350,8 @@ bool write2iBtnRW1990_1_2_TM01(emRWType rwType){              // функция 
     }
   digitalWrite(R_Led, LOW);       
   if (!dataIsBurningOK(bitCnt)){                  // проверяем корректность записи
-    Serial.println(F(" The key copy faild"));
-    OLED_printError(F("The key copy faild"));
+    Serial.println(F(" The key copy failed"));
+    OLED_printError(F("The key copy failed"));
     Sd_ErrorBeep();
     digitalWrite(R_Led, HIGH);
     return false;
@@ -693,7 +695,7 @@ void rfidACsetOn(){
   ACSR &= ~(1<<ACBG);             // отключаем от входа Ain0 1.1V
 }
 
-bool searchEM_Marine( bool copyKey = true){
+bool searchEM_Marine(bool copyKey = true){
 //  byte gr = digitalRead(G_Led);
   bool rez = false;
   rfidACsetOn();            // включаем генератор 125кГц и компаратор
@@ -920,6 +922,7 @@ bool write2Mifare() {
 }
 
 #ifndef BLUE_MODE
+
 bool clear2Mifare() {
   bool result = false;
   if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
@@ -956,10 +959,11 @@ bool clear2Mifare() {
   statOk = result;
   return result;
 }
-#endif
+
+#else
 
 //**********BlueMode***************************
-#ifdef BLUE_MODE
+
 void SendEM_Marine(byte* buf){ 
   TCCR2A &= ~_BV(COM2B1); // отключаем шим 
   digitalWrite(FreqGen, LOW);
@@ -1002,9 +1006,11 @@ void BM_SendKey(byte* buf){
     default: SendDallas(buf); break;
   }
 }
+
 #endif
 
 unsigned long stTimer = millis();
+
 void loop() {
   char echo = Serial.read();
   if (echo == 'e'){
@@ -1015,6 +1021,7 @@ void loop() {
     Sd_ReadOK();
     myOLED.update();
   }
+
   if ((echo == 't') || enc1.isClick()) {  // переключаель режима чтение/запись
     switch (copierMode){
       case md_empty: Sd_ErrorBeep(); break;
@@ -1025,11 +1032,13 @@ void loop() {
       case md_threeMode: copierMode = md_read; clearLed(); digitalWrite(G_Led, HIGH); 
         delayMicroseconds(5); break;
     }
+
     OLED_printKey(keyID);
     Serial.print(F("Mode: ")); Serial.println(copierMode);
     Sd_WriteStep();
     statOk = false;
   }
+
   if (enc1.isLeft() && (EEPROM_key_count > 0)){       //при повороте энкодера листаем ключи из eeprom
     EEPROM_key_index--;
     if (EEPROM_key_index < 1) EEPROM_key_index = EEPROM_key_count;
@@ -1038,6 +1047,7 @@ void loop() {
     Sd_WriteStep();
     // statOk = false;
   }
+
   if (enc1.isRight() && (EEPROM_key_count > 0)){
     EEPROM_key_index++;
     if (EEPROM_key_index > EEPROM_key_count) EEPROM_key_index = 1;
@@ -1046,6 +1056,7 @@ void loop() {
     Sd_WriteStep();
     // statOk = false;
   }
+
   if ((copierMode != md_empty) && enc1.isHolded()){     // Если зажать кнопкку - ключ сохранися в EEPROM
     if (EPPROM_AddKey(keyID)) {
       OLED_printError(F("The key saved"), false);
@@ -1078,11 +1089,10 @@ void loop() {
         #ifdef BLUE_MODE
           BM_SendKey(keyID);
           break;
-        #endif
-        #ifndef BLUE_MODE
+        #else
           if(!statOk){
-          clear2Mifare();
-          break;
+            clear2Mifare();
+            break;
           }
         #endif
     } //end switch
