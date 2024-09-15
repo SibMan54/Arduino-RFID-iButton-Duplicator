@@ -1,3 +1,9 @@
+# IDE system files
+.pio/
+.vs/
+.vscode/
+.idea/
+
 # Prerequisites
 *.d
 
